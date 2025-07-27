@@ -1,0 +1,2651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Chord System - by David Dahl</title>
+    <style>
+		.copyright {
+		    position: absolute;
+		    bottom: 10px;
+		    left: 50%;
+		    transform: translateX(-50%);
+		    color: white;
+		    font-size: 12px;
+		    text-align: center;
+		    font-family: Arial, sans-serif;
+		}
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0000ff;
+            font-family: Arial, sans-serif;
+            color: black;
+            overflow-x: auto;
+        }
+        
+        .container {
+            width: 1200px;
+            height: 800px;
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            background: #0000ff;
+            cursor: pointer;
+        }
+        
+        .chord-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: black;
+            text-align: center;
+        }
+        
+        .extensions {
+            position: absolute;
+            top: 80px;
+            right: 80px;
+        }
+        
+        .extensions h3 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .extension-buttons {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .extension-btn {
+            font-size: 26px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .extension-btn.selected {
+            color: yellow;
+            background: rgba(255,255,0,0.2);
+        }
+        
+        .extension-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+		.legend {
+		    position: absolute;
+		    bottom: 20px;
+		    right: 20px;
+		    background: rgba(0,0,0,0.3);
+		    padding: 15px;
+		    border-radius: 5px;
+		    color: white;
+        }
+        
+        .legend h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .color-item {
+            display: flex;
+            align-items: center;
+            margin: 3px 0;
+            font-size: 14px;
+        }
+        
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 1250px) {
+            .container {
+                width: 100%;
+                height: 600px;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            
+            canvas {
+                width: 100%;
+                height: 100%;
+            }
+            
+            .extensions {
+                top: 60px;
+                right: 20px;
+            }
+            
+            .extension-buttons {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .extension-btn {
+                font-size: 20px;
+            }
+        }
+		</style>
+		</head>
+		<body>
+		    <div class="container">
+		        <div style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; color: white;">
+		            <div style="font-size: 16px; margin-bottom: 5px;">Universal Chord System - by David Dahl</div>
+		            <div class="chord-title" id="chordTitle" style="font-size: 24px; font-weight: bold;"></div>
+		        </div>
+        
+		        <canvas id="chordCanvas" width="1200" height="800"></canvas>
+        
+		        <div class="extensions">
+		            <h3>Extensions</h3>
+		            <div class="extension-buttons" id="extensionButtons">
+		                <div class="extension-btn" data-ext="M">M</div>
+		                <div class="extension-btn" data-ext="m">m</div>
+		                <div class="extension-btn" data-ext="7th">7th</div>
+		                <div class="extension-btn" data-ext="m7th">m7th</div>
+		                <div class="extension-btn" data-ext="6th">6th</div>
+		                <div class="extension-btn" data-ext="m6th">m6th</div>
+		            </div>
+		        </div>
+        
+		        <div class="legend">
+		            <h3>Note Colors:</h3>
+		            <div class="color-item">
+		                <div class="color-dot" style="background: red;"></div>
+		                <span>Red = 1 = Root</span>
+		            </div>
+		            <div class="color-item">
+		                <div class="color-dot" style="background: yellow;"></div>
+		                <span>Yellow = 3rd</span>
+		            </div>
+		            <div class="color-item">
+		                <div class="color-dot" style="background: #80ccff;"></div>
+		                <span>Blue = 5th</span>
+		            </div>
+		            <div class="color-item">
+		                <div class="color-dot" style="background: #c0c0c0;"></div>
+		                <span>Silver = 6th</span>
+		            </div>
+		            <div class="color-item">
+		                <div class="color-dot" style="background: orange;"></div>
+		                <span>Orange = 7th</span>
+		            </div>
+		        </div>
+        
+		        <div class="copyright">
+		            © 2025 David Dahl - Universal Chord System. All rights reserved.
+		        </div>
+		    </div>
+
+		    <script>
+		        // ========== ADD YOUR CHORD DATABASE HERE ==========
+		        // MAJOR CHORDS - COMPLETE WITH ALL POSITIONS
+		const all_chords = {
+		    "CM": [
+		        { // CM Open
+		            notes: [
+		                {string: 1, fret: 0, color: "yellow"},
+		                {string: 2, fret: 1, color: "red"},
+		                {string: 3, fret: 0, color: "blue"},
+		                {string: 4, fret: 2, color: "yellow"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // CM 3rd position
+		            notes: [
+		                {string: 2, fret: 5, color: "yellow"},
+		                {string: 3, fret: 5, color: "red"},
+		                {string: 4, fret: 5, color: "blue"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // CM 8th position
+		            notes: [
+		                {string: 1, fret: 8, color: "red"},
+		                {string: 2, fret: 8, color: "blue"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 10, color: "red"},
+		                {string: 5, fret: 10, color: "blue"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "GM": [
+		        { // GM Open
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 0, color: "yellow"},
+		                {string: 3, fret: 0, color: "red"},
+		                {string: 4, fret: 0, color: "blue"},
+		                {string: 5, fret: 2, color: "yellow"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // GM 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 5, color: "red"},
+		                {string: 5, fret: 5, color: "blue"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // GM 10th
+		            notes: [
+		                {string: 2, fret: 12, color: "yellow"},
+		                {string: 3, fret: 12, color: "red"},
+		                {string: 4, fret: 12, color: "blue"},
+		                {string: 5, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "DM": [
+		        { // DM Open
+		            notes: [
+		                {string: 1, fret: 2, color: "yellow"},
+		                {string: 2, fret: 3, color: "red"},
+		                {string: 3, fret: 2, color: "blue"},
+		                {string: 4, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // DM 5th
+		            notes: [
+		                {string: 2, fret: 7, color: "yellow"},
+		                {string: 3, fret: 7, color: "red"},
+		                {string: 4, fret: 7, color: "blue"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // DM 10th
+		            notes: [
+		                {string: 1, fret: 10, color: "red"},
+		                {string: 2, fret: 10, color: "blue"},
+		                {string: 3, fret: 11, color: "yellow"},
+		                {string: 4, fret: 12, color: "red"},
+		                {string: 5, fret: 12, color: "blue"},
+		                {string: 6, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "AM": [
+		        { // AM Open
+		            notes: [
+		                {string: 1, fret: 0, color: "blue"},
+		                {string: 2, fret: 2, color: "yellow"},
+		                {string: 3, fret: 2, color: "red"},
+		                {string: 4, fret: 2, color: "blue"},
+		                {string: 5, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // AM 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "red"},
+		                {string: 2, fret: 5, color: "blue"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 7, color: "red"},
+		                {string: 5, fret: 7, color: "blue"},
+		                {string: 6, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // AM 7th
+		            notes: [
+		                {string: 1, fret: 9, color: "yellow"},
+		                {string: 2, fret: 10, color: "red"},
+		                {string: 3, fret: 9, color: "blue"},
+		                {string: 4, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "EM": [
+		        { // EM Open 
+		            notes: [
+		                {string: 1, fret: 0, color: "red"},
+		                {string: 2, fret: 0, color: "blue"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 2, color: "red"},
+		                {string: 5, fret: 2, color: "blue"},
+		                {string: 6, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // EM 4th 
+		            notes: [
+		                {string: 1, fret: 4, color: "yellow"},
+		                {string: 2, fret: 5, color: "red"},
+		                {string: 3, fret: 4, color: "blue"},
+		                {string: 4, fret: 6, color: "yellow"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // EM 7th
+		            notes: [
+		                {string: 2, fret: 9, color: "yellow"},
+		                {string: 3, fret: 9, color: "red"},
+		                {string: 4, fret: 9, color: "blue"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "BM": [
+		        { // BM 2nd
+		            notes: [
+		                {string: 2, fret: 4, color: "yellow"},
+		                {string: 3, fret: 4, color: "red"},
+		                {string: 4, fret: 4, color: "blue"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // BM 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "red"},
+		                {string: 2, fret: 7, color: "blue"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 9, color: "red"},
+		                {string: 5, fret: 9, color: "blue"},
+		                {string: 6, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F#M": [
+		        { // F#M 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "red"},
+		                {string: 2, fret: 2, color: "blue"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 4, color: "red"},
+		                {string: 5, fret: 4, color: "blue"},
+		                {string: 6, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // F#M 6th 
+		            notes: [
+		                {string: 1, fret: 6, color: "yellow"},
+		                {string: 2, fret: 7, color: "red"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 8, color: "yellow"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        },
+		        { // F#M 9th
+		            notes: [
+		                {string: 2, fret: 11, color: "yellow"},
+		                {string: 3, fret: 11, color: "red"},
+		                {string: 4, fret: 11, color: "blue"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "C#M": [
+		        { // C#M 1st 
+		            notes: [
+		                {string: 1, fret: 1, color: "yellow"},
+		                {string: 2, fret: 2, color: "red"},
+		                {string: 3, fret: 1, color: "blue"},
+		                {string: 4, fret: 3, color: "yellow"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#M 4th
+		            notes: [
+		                {string: 2, fret: 6, color: "yellow"},
+		                {string: 3, fret: 6, color: "red"},
+		                {string: 4, fret: 6, color: "blue"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#M 9th
+		            notes: [
+		                {string: 1, fret: 9, color: "red"},
+		                {string: 2, fret: 9, color: "blue"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 11, color: "red"},
+		                {string: 5, fret: 11, color: "blue"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G#M": [
+		        { // G#M 4th
+		            notes: [
+		                {string: 1, fret: 4, color: "red"},
+		                {string: 2, fret: 4, color: "blue"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 6, color: "red"},
+		                {string: 5, fret: 6, color: "blue"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#M 6th 
+		            notes: [
+		                {string: 1, fret: 8, color: "yellow"},
+		                {string: 2, fret: 9, color: "red"},
+		                {string: 3, fret: 8, color: "blue"},
+		                {string: 4, fret: 10, color: "yellow"},
+		                {string: 5, fret: 11, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D#M": [
+		        { // D#M 1st
+		            notes: [
+		                {string: 1, fret: 3, color: "blue"},
+		                {string: 2, fret: 4, color: "red"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // D#M 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "yellow"},
+		                {string: 2, fret: 4, color: "red"},
+		                {string: 3, fret: 3, color: "blue"},
+		                {string: 4, fret: 5, color: "yellow"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // D#M 6th 
+		            notes: [
+		                {string: 2, fret: 8, color: "yellow"},
+		                {string: 3, fret: 8, color: "red"},
+		                {string: 4, fret: 8, color: "blue"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A#M": [
+		        { // A#M 2nd 
+		            notes: [
+		                {string: 2, fret: 3, color: "yellow"},
+		                {string: 3, fret: 3, color: "red"},
+		                {string: 4, fret: 3, color: "blue"},
+		                {string: 5, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // A#M 6th
+		            notes: [
+		                {string: 1, fret: 6, color: "red"},
+		                {string: 2, fret: 6, color: "blue"},
+		                {string: 3, fret: 7, color: "yellow"},
+		                {string: 4, fret: 8, color: "red"},
+		                {string: 5, fret: 8, color: "blue"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "FM": [
+		        { // FM 1st
+		            notes: [
+		                {string: 1, fret: 1, color: "red"},
+		                {string: 2, fret: 1, color: "blue"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 3, color: "red"},
+		                {string: 5, fret: 3, color: "blue"},
+		                {string: 6, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // FM 3rd 
+		            notes: [
+		                {string: 1, fret: 5, color: "yellow"},
+		                {string: 2, fret: 6, color: "red"},
+		                {string: 3, fret: 5, color: "blue"},
+		                {string: 4, fret: 7, color: "yellow"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // FM 8th
+		            notes: [
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 10, color: "red"},
+		                {string: 4, fret: 10, color: "blue"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    // MINOR CHORDS
+		    "Am": [
+		        { // Am Open
+		            notes: [
+		                {string: 1, fret: 0, color: "blue"},
+		                {string: 2, fret: 1, color: "yellow"},
+		                {string: 3, fret: 2, color: "red"},
+		                {string: 4, fret: 2, color: "blue"},
+		                {string: 5, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Am 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "red"},
+		                {string: 2, fret: 5, color: "blue"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 7, color: "red"},
+		                {string: 5, fret: 7, color: "blue"},
+		                {string: 6, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Am 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "yellow"},
+		                {string: 2, fret: 10, color: "red"},
+		                {string: 3, fret: 9, color: "blue"},
+		                {string: 4, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Em": [
+		        { // Em Open
+		            notes: [
+		                {string: 1, fret: 0, color: "red"},
+		                {string: 2, fret: 0, color: "blue"},
+		                {string: 3, fret: 0, color: "yellow"},
+		                {string: 4, fret: 2, color: "red"},
+		                {string: 5, fret: 2, color: "blue"},
+		                {string: 6, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Em 2nd
+		            notes: [
+		                {string: 1, fret: 3, color: "yellow"},
+		                {string: 2, fret: 5, color: "red"},
+		                {string: 3, fret: 4, color: "blue"},
+		                {string: 4, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // Em 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "blue"},
+		                {string: 2, fret: 8, color: "yellow"},
+		                {string: 3, fret: 9, color: "red"},
+		                {string: 4, fret: 9, color: "blue"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Bm": [
+		        { // Bm 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 3, color: "yellow"},
+		                {string: 3, fret: 4, color: "red"},
+		                {string: 4, fret: 4, color: "blue"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // Bm 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "red"},
+		                {string: 2, fret: 7, color: "blue"},
+		                {string: 3, fret: 7, color: "yellow"},
+		                {string: 4, fret: 9, color: "red"},
+		                {string: 5, fret: 9, color: "blue"},
+		                {string: 6, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // Bm 9th
+		            notes: [
+		                {string: 1, fret: 10, color: "yellow"},
+		                {string: 2, fret: 12, color: "red"},
+		                {string: 3, fret: 11, color: "blue"},
+		                {string: 4, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F#m": [
+		        { // F#m 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "red"},
+		                {string: 2, fret: 2, color: "blue"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 4, color: "red"},
+		                {string: 5, fret: 4, color: "blue"},
+		                {string: 6, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // F#m 4th
+		            notes: [
+		                {string: 1, fret: 5, color: "yellow"},
+		                {string: 2, fret: 7, color: "red"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // F#m 9th
+		            notes: [
+		                {string: 1, fret: 9, color: "blue"},
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 11, color: "red"},
+		                {string: 4, fret: 11, color: "blue"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "C#m": [
+		        { // C#m 4th 
+		            notes: [
+		                {string: 1, fret: 4, color: "blue"},
+		                {string: 2, fret: 5, color: "yellow"},
+		                {string: 3, fret: 6, color: "red"},
+		                {string: 4, fret: 6, color: "blue"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#m 9th 
+		            notes: [
+		                {string: 1, fret: 9, color: "red"},
+		                {string: 2, fret: 9, color: "blue"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 11, color: "red"},
+		                {string: 5, fret: 11, color: "blue"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G#m": [
+		        { // G#m 4th
+		            notes: [
+		                {string: 1, fret: 4, color: "red"},
+		                {string: 2, fret: 4, color: "blue"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 6, color: "red"},
+		                {string: 5, fret: 6, color: "blue"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#m 6th
+		            notes: [
+		                {string: 1, fret: 7, color: "yellow"},
+		                {string: 2, fret: 9, color: "red"},
+		                {string: 3, fret: 8, color: "blue"},
+		                {string: 4, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D#m": [
+		        { // D#m 1st 
+		            notes: [
+		                {string: 1, fret: 2, color: "yellow"},
+		                {string: 2, fret: 4, color: "red"},
+		                {string: 3, fret: 3, color: "blue"},
+		                {string: 4, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // D#m 6th
+		            notes: [
+		                {string: 1, fret: 6, color: "blue"},
+		                {string: 2, fret: 7, color: "yellow"},
+		                {string: 3, fret: 8, color: "red"},
+		                {string: 4, fret: 8, color: "blue"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A#m": [
+		        { // A#m 1st 
+		            notes: [
+		                {string: 1, fret: 1, color: "blue"},
+		                {string: 2, fret: 2, color: "yellow"},
+		                {string: 3, fret: 3, color: "red"},
+		                {string: 4, fret: 3, color: "blue"},
+		                {string: 5, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // A#m 6th
+		            notes: [
+		                {string: 1, fret: 6, color: "red"},
+		                {string: 2, fret: 6, color: "blue"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 8, color: "red"},
+		                {string: 5, fret: 8, color: "blue"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // A#m 8th 
+		            notes: [
+		                {string: 1, fret: 9, color: "yellow"},
+		                {string: 2, fret: 11, color: "red"},
+		                {string: 3, fret: 10, color: "blue"},
+		                {string: 4, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Fm": [
+		        { // Fm 1st
+		            notes: [
+		                {string: 1, fret: 1, color: "red"},
+		                {string: 2, fret: 1, color: "blue"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 3, color: "red"},
+		                {string: 5, fret: 3, color: "blue"},
+		                {string: 6, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // Fm 3rd 
+		            notes: [
+		                {string: 1, fret: 4, color: "yellow"},
+		                {string: 2, fret: 6, color: "red"},
+		                {string: 3, fret: 5, color: "blue"},
+		                {string: 4, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Fm 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "blue"},
+		                {string: 2, fret: 9, color: "yellow"},
+		                {string: 3, fret: 10, color: "red"},
+		                {string: 4, fret: 10, color: "blue"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Cm": [
+		        { // Cm 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "blue"},
+		                {string: 2, fret: 4, color: "yellow"},
+		                {string: 3, fret: 5, color: "red"},
+		                {string: 4, fret: 5, color: "blue"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Cm 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "red"},
+		                {string: 2, fret: 8, color: "blue"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 10, color: "red"},
+		                {string: 5, fret: 10, color: "blue"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Gm": [
+		        { // Gm 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 5, color: "red"},
+		                {string: 5, fret: 5, color: "blue"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Gm 5th 
+		            notes: [
+		                {string: 1, fret: 6, color: "yellow"},
+		                {string: 2, fret: 8, color: "red"},
+		                {string: 3, fret: 7, color: "blue"},
+		                {string: 4, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Gm 10th
+		            notes: [
+		                {string: 1, fret: 10, color: "blue"},
+		                {string: 2, fret: 11, color: "yellow"},
+		                {string: 3, fret: 12, color: "red"},
+		                {string: 4, fret: 12, color: "blue"},
+		                {string: 5, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Dm": [
+		        { // Dm Open 
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 3, color: "red"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Dm 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "blue"},
+		                {string: 2, fret: 6, color: "yellow"},
+		                {string: 3, fret: 7, color: "red"},
+		                {string: 4, fret: 7, color: "blue"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Dm 10th
+		            notes: [
+		                {string: 1, fret: 10, color: "red"},
+		                {string: 2, fret: 10, color: "blue"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 12, color: "red"},
+		                {string: 5, fret: 12, color: "blue"},
+		                {string: 6, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+    
+		    // DOMINANT 7TH CHORDS
+		    "C7": [
+		        { // C7 Open
+		            notes: [
+		                {string: 1, fret: 0, color: "yellow"},
+		                {string: 2, fret: 1, color: "red"},
+		                {string: 3, fret: 3, color: "orange"},
+		                {string: 4, fret: 2, color: "yellow"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // C7 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "blue"},
+		                {string: 2, fret: 5, color: "yellow"},
+		                {string: 3, fret: 3, color: "orange"},
+		                {string: 4, fret: 5, color: "blue"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // C7 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "red"},
+		                {string: 2, fret: 8, color: "blue"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 8, color: "orange"},
+		                {string: 5, fret: 10, color: "blue"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // C7 10th
+		            notes: [
+		                {string: 1, fret: 12, color: "yellow"},
+		                {string: 2, fret: 11, color: "orange"},
+		                {string: 3, fret: 12, color: "blue"},
+		                {string: 4, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G7": [
+		        { // G7 Open
+		            notes: [
+		                {string: 1, fret: 1, color: "orange"},
+		                {string: 2, fret: 0, color: "yellow"},
+		                {string: 3, fret: 0, color: "red"},
+		                {string: 4, fret: 0, color: "blue"},
+		                {string: 5, fret: 2, color: "yellow"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // G7 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 3, color: "orange"},
+		                {string: 5, fret: 5, color: "blue"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // G7 5th
+		            notes: [
+		                {string: 1, fret: 7, color: "yellow"},
+		                {string: 2, fret: 6, color: "orange"},
+		                {string: 3, fret: 7, color: "blue"},
+		                {string: 4, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // G7 10th
+		            notes: [
+		                {string: 2, fret: 8, color: "red"},
+		                {string: 3, fret: 10, color: "orange"},
+		                {string: 4, fret: 9, color: "yellow"},
+		                {string: 5, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D7": [
+		        { // D7 Open
+		            notes: [
+		                {string: 1, fret: 2, color: "yellow"},
+		                {string: 2, fret: 1, color: "orange"},
+		                {string: 3, fret: 2, color: "blue"},
+		                {string: 4, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // D7 3rd
+		            notes: [
+		                {string: 2, fret: 3, color: "red"},
+		                {string: 3, fret: 5, color: "orange"},
+		                {string: 4, fret: 4, color: "yellow"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // D7 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "blue"},
+		                {string: 2, fret: 7, color: "yellow"},
+		                {string: 3, fret: 5, color: "orange"},
+		                {string: 4, fret: 7, color: "blue"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // D7 10th
+		            notes: [
+		                {string: 1, fret: 10, color: "red"},
+		                {string: 2, fret: 10, color: "blue"},
+		                {string: 3, fret: 11, color: "yellow"},
+		                {string: 4, fret: 10, color: "orange"},
+		                {string: 5, fret: 12, color: "blue"},
+		                {string: 6, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A7": [
+		        { // A7 Open
+		            notes: [
+		                {string: 1, fret: 0, color: "blue"},
+		                {string: 2, fret: 2, color: "yellow"},
+		                {string: 3, fret: 0, color: "orange"},
+		                {string: 4, fret: 2, color: "blue"},
+		                {string: 5, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // A7 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "red"},
+		                {string: 2, fret: 5, color: "blue"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 5, color: "orange"},
+		                {string: 5, fret: 7, color: "blue"},
+		                {string: 6, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // A7 7th
+		            notes: [
+		                {string: 1, fret: 9, color: "yellow"},
+		                {string: 2, fret: 8, color: "orange"},
+		                {string: 3, fret: 9, color: "blue"},
+		                {string: 4, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // A7 10th
+		            notes: [
+		                {string: 2, fret: 10, color: "red"},
+		                {string: 3, fret: 12, color: "orange"},
+		                {string: 4, fret: 11, color: "yellow"},
+		                {string: 5, fret: 12, color: "red"}
+		            ]
+		        }
+		    ],
+		    "E7": [
+		        { // E7 Open 
+		            notes: [
+		                {string: 1, fret: 0, color: "red"},
+		                {string: 2, fret: 0, color: "blue"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 0, color: "orange"},
+		                {string: 5, fret: 2, color: "blue"},
+		                {string: 6, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // E7 2nd
+		            notes: [
+		                {string: 1, fret: 4, color: "yellow"},
+		                {string: 2, fret: 3, color: "orange"},
+		                {string: 3, fret: 4, color: "blue"},
+		                {string: 4, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // E7 5th
+		            notes: [
+		                {string: 2, fret: 5, color: "red"},
+		                {string: 3, fret: 7, color: "orange"},
+		                {string: 4, fret: 6, color: "yellow"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // E7 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "blue"},
+		                {string: 2, fret: 9, color: "yellow"},
+		                {string: 3, fret: 7, color: "orange"},
+		                {string: 4, fret: 9, color: "blue"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "B7": [
+		        { // B7 Open
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 0, color: "red"},
+		                {string: 3, fret: 2, color: "orange"},
+		                {string: 4, fret: 1, color: "yellow"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // B7 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 4, color: "yellow"},
+		                {string: 3, fret: 2, color: "orange"},
+		                {string: 4, fret: 4, color: "blue"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // B7 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "red"},
+		                {string: 2, fret: 7, color: "blue"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 7, color: "orange"},
+		                {string: 5, fret: 9, color: "blue"},
+		                {string: 6, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // B7 12th
+		            notes: [
+		                {string: 1, fret: 11, color: "yellow"},
+		                {string: 2, fret: 10, color: "orange"},
+		                {string: 3, fret: 11, color: "blue"},
+		                {string: 4, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F#7": [
+		        { // F#7 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "red"},
+		                {string: 2, fret: 2, color: "blue"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 2, color: "orange"},
+		                {string: 5, fret: 4, color: "blue"},
+		                {string: 6, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // F#7 4th 
+		            notes: [
+		                {string: 1, fret: 6, color: "yellow"},
+		                {string: 2, fret: 5, color: "orange"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // F#7 7th
+		            notes: [
+		                {string: 2, fret: 7, color: "red"},
+		                {string: 3, fret: 9, color: "orange"},
+		                {string: 4, fret: 8, color: "yellow"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        },
+		        { // F#7 9th
+		            notes: [
+		                {string: 1, fret: 9, color: "blue"},
+		                {string: 2, fret: 11, color: "yellow"},
+		                {string: 3, fret: 9, color: "orange"},
+		                {string: 4, fret: 11, color: "blue"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "C#7": [
+		        { // C#7 2nd
+		            notes: [
+		                {string: 2, fret: 2, color: "red"},
+		                {string: 3, fret: 4, color: "orange"},
+		                {string: 4, fret: 3, color: "yellow"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#7 4th
+		            notes: [
+		                {string: 1, fret: 4, color: "blue"},
+		                {string: 2, fret: 6, color: "yellow"},
+		                {string: 3, fret: 4, color: "orange"},
+		                {string: 4, fret: 6, color: "blue"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#7 9th 
+		            notes: [
+		                {string: 1, fret: 9, color: "red"},
+		                {string: 2, fret: 9, color: "blue"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 9, color: "orange"},
+		                {string: 5, fret: 11, color: "blue"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G#7": [
+		        { // G#7 4th
+		            notes: [
+		                {string: 1, fret: 4, color: "red"},
+		                {string: 2, fret: 4, color: "blue"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 4, color: "orange"},
+		                {string: 5, fret: 6, color: "blue"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#7 6th 
+		            notes: [
+		                {string: 1, fret: 6, color: "yellow"},
+		                {string: 2, fret: 5, color: "orange"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#7 9th 
+		            notes: [
+		                {string: 2, fret: 9, color: "red"},
+		                {string: 3, fret: 11, color: "orange"},
+		                {string: 4, fret: 10, color: "yellow"},
+		                {string: 5, fret: 11, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D#7": [
+		        { // D#7 1st
+		            notes: [
+		                {string: 1, fret: 3, color: "yellow"},
+		                {string: 2, fret: 2, color: "orange"},
+		                {string: 3, fret: 3, color: "blue"},
+		                {string: 4, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // D#7 6th
+		            notes: [
+		                {string: 2, fret: 4, color: "red"},
+		                {string: 3, fret: 6, color: "orange"},
+		                {string: 4, fret: 5, color: "yellow"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // D#7 8th
+		            notes: [
+		                {string: 1, fret: 6, color: "blue"},
+		                {string: 2, fret: 8, color: "yellow"},
+		                {string: 3, fret: 6, color: "orange"},
+		                {string: 4, fret: 8, color: "blue"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A#7": [
+		        { // A#7 1st
+		            notes: [
+		                {string: 1, fret: 1, color: "blue"},
+		                {string: 2, fret: 3, color: "yellow"},
+		                {string: 3, fret: 1, color: "orange"},
+		                {string: 4, fret: 3, color: "blue"},
+		                {string: 5, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // A#7 6th 
+		            notes: [
+		                {string: 1, fret: 6, color: "red"},
+		                {string: 2, fret: 6, color: "blue"},
+		                {string: 3, fret: 7, color: "yellow"},
+		                {string: 4, fret: 6, color: "orange"},
+		                {string: 5, fret: 8, color: "blue"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // A#7 8th 
+		            notes: [
+		                {string: 1, fret: 10, color: "yellow"},
+		                {string: 2, fret: 9, color: "orange"},
+		                {string: 3, fret: 10, color: "blue"},
+		                {string: 4, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F7": [
+		        { // F7 1st
+		            notes: [
+		                {string: 1, fret: 1, color: "red"},
+		                {string: 2, fret: 1, color: "blue"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 1, color: "orange"},
+		                {string: 5, fret: 3, color: "blue"},
+		                {string: 6, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // F7 3rd 
+		            notes: [
+		                {string: 1, fret: 5, color: "yellow"},
+		                {string: 2, fret: 4, color: "orange"},
+		                {string: 3, fret: 5, color: "blue"},
+		                {string: 4, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // F7 6th
+		            notes: [
+		                {string: 2, fret: 6, color: "red"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 7, color: "orange"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // F7 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "blue"},
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 8, color: "orange"},
+		                {string: 4, fret: 10, color: "blue"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+
+		    // MINOR 7TH CHORDS
+		    "Am7": [
+		        { // Am7 Open
+		            notes: [
+		                {string: 1, fret: 0, color: "yellow"},
+		                {string: 2, fret: 1, color: "blue"},
+		                {string: 3, fret: 0, color: "orange"},
+		                {string: 4, fret: 2, color: "blue"},
+		                {string: 5, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Am7 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "red"},
+		                {string: 2, fret: 5, color: "blue"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 5, color: "orange"},
+		                {string: 5, fret: 7, color: "blue"},
+		                {string: 6, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Am7 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "yellow"},
+		                {string: 2, fret: 8, color: "orange"},
+		                {string: 3, fret: 9, color: "blue"},
+		                {string: 4, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Em7": [
+		        { // Em7 Open
+		            notes: [
+		                {string: 1, fret: 0, color: "red"},
+		                {string: 2, fret: 0, color: "blue"},
+		                {string: 3, fret: 0, color: "yellow"},
+		                {string: 4, fret: 0, color: "orange"},
+		                {string: 5, fret: 2, color: "blue"},
+		                {string: 6, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Em7 2nd
+		            notes: [
+		                {string: 1, fret: 3, color: "yellow"},
+		                {string: 2, fret: 3, color: "orange"},
+		                {string: 3, fret: 4, color: "blue"},
+		                {string: 4, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // Em7 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "blue"},
+		                {string: 2, fret: 8, color: "yellow"},
+		                {string: 3, fret: 7, color: "orange"},
+		                {string: 4, fret: 9, color: "blue"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Bm7": [
+		        { // Bm7 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 3, color: "yellow"},
+		                {string: 3, fret: 2, color: "orange"},
+		                {string: 4, fret: 4, color: "blue"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // Bm7 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "red"},
+		                {string: 2, fret: 7, color: "blue"},
+		                {string: 3, fret: 7, color: "yellow"},
+		                {string: 4, fret: 7, color: "orange"},
+		                {string: 5, fret: 9, color: "blue"},
+		                {string: 6, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // Bm7 9th
+		            notes: [
+		                {string: 1, fret: 10, color:"yellow"},
+		                {string: 2, fret: 10, color: "orange"},
+		                {string: 3, fret: 11, color: "blue"},
+		                {string: 4, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F#m7": [
+		        { // F#m7 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "red"},
+		                {string: 2, fret: 2, color: "blue"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 2, color: "orange"},
+		                {string: 5, fret: 4, color: "blue"},
+		                {string: 6, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // F#m7 4th
+		            notes: [
+		                {string: 1, fret: 5, color: "yellow"},
+		                {string: 2, fret: 5, color: "orange"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // F#m7 9th
+		            notes: [
+		                {string: 1, fret: 9, color: "blue"},
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 9, color: "orange"},
+		                {string: 4, fret: 11, color: "blue"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "C#m7": [
+		        { // C#m7 4th 
+		            notes: [
+		                {string: 1, fret: 4, color: "blue"},
+		                {string: 2, fret: 5, color: "yellow"},
+		                {string: 3, fret: 4, color: "orange"},
+		                {string: 4, fret: 6, color: "blue"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#m7 9th 
+		            notes: [
+		                {string: 1, fret: 9, color: "red"},
+		                {string: 2, fret: 9, color: "blue"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 9, color: "orange"},
+		                {string: 5, fret: 11, color: "blue"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G#m7": [
+		        { // G#m7 4th
+		            notes: [
+		                {string: 1, fret: 4, color: "red"},
+		                {string: 2, fret: 4, color: "blue"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 4, color: "orange"},
+		                {string: 5, fret: 6, color: "blue"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#m7 6th
+		            notes: [
+		                {string: 1, fret: 7, color: "yellow"},
+		                {string: 2, fret: 7, color: "orange"},
+		                {string: 3, fret: 8, color: "blue"},
+		                {string: 4, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D#m7": [
+		        { // D#m7 1st 
+		            notes: [
+		                {string: 1, fret: 2, color: "yellow"},
+		                {string: 2, fret: 2, color: "orange"},
+		                {string: 3, fret: 3, color: "blue"},
+		                {string: 4, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // D#m7 6th
+		            notes: [
+		                {string: 1, fret: 6, color: "blue"},
+		                {string: 2, fret: 7, color: "yellow"},
+		                {string: 3, fret: 6, color: "orange"},
+		                {string: 4, fret: 8, color: "blue"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A#m7": [
+		        { // A#m7 1st 
+		            notes: [
+		                {string: 1, fret: 1, color: "blue"},
+		                {string: 2, fret: 2, color: "yellow"},
+		                {string: 3, fret: 1, color: "orange"},
+		                {string: 4, fret: 3, color: "blue"},
+		                {string: 5, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // A#m7 6th
+		            notes: [
+		                {string: 1, fret: 6, color: "red"},
+		                {string: 2, fret: 6, color: "blue"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 6, color: "orange"},
+		                {string: 5, fret: 8, color: "blue"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // A#m7 8th 
+		            notes: [
+		                {string: 1, fret: 9, color: "yellow"},
+		                {string: 2, fret: 9, color: "orange"},
+		                {string: 3, fret: 10, color: "blue"},
+		                {string: 4, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Fm7": [
+		        { // Fm7 1st
+		            notes: [
+		                {string: 1, fret: 1, color: "red"},
+		                {string: 2, fret: 1, color: "blue"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 1, color: "orange"},
+		                {string: 5, fret: 3, color: "blue"},
+		                {string: 6, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // Fm7 3rd 
+		            notes: [
+		                {string: 1, fret: 4, color: "yellow"},
+		                {string: 2, fret: 4, color: "orange"},
+		                {string: 3, fret: 5, color: "blue"},
+		                {string: 4, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Fm7 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "blue"},
+		                {string: 2, fret: 9, color: "yellow"},
+		                {string: 3, fret: 8, color: "orange"},
+		                {string: 4, fret: 10, color: "blue"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Cm7": [
+		        { // Cm7 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "blue"},
+		                {string: 2, fret: 4, color: "yellow"},
+		                {string: 3, fret: 3, color: "orange"},
+		                {string: 4, fret: 5, color: "blue"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Cm7 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "red"},
+		                {string: 2, fret: 8, color: "blue"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 8, color: "orange"},
+		                {string: 5, fret: 10, color: "blue"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // Cm7 10th
+		            notes: [
+		                {string: 1, fret: 11, color: "yellow"},
+		                {string: 2, fret: 11, color: "orange"},
+		                {string: 3, fret: 12, color: "blue"},
+		                {string: 4, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Gm7": [
+		        { // Gm7 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 3, color: "orange"},
+		                {string: 5, fret: 5, color: "blue"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Gm7 5th 
+		            notes: [
+		                {string: 1, fret: 6, color: "yellow"},
+		                {string: 2, fret: 8, color: "orange"},
+		                {string: 3, fret: 7, color: "blue"},
+		                {string: 4, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Gm7 10th
+		            notes: [
+		                {string: 1, fret: 8, color: "blue"},
+		                {string: 2, fret: 9, color: "yellow"},
+		                {string: 3, fret: 8, color: "orange"},
+		                {string: 4, fret: 10, color: "blue"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Dm7": [
+		        { // Dm7 Open 
+		            notes: [
+		                {string: 1, fret: 1, color: "yellow"},
+		                {string: 2, fret: 1, color: "orange"},
+		                {string: 3, fret: 2, color: "blue"},
+		                {string: 4, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Dm7 5th
+		            notes: [
+		                {string: 1, fret: 5, color: "blue"},
+		                {string: 2, fret: 6, color: "yellow"},
+		                {string: 3, fret: 5, color: "orange"},
+		                {string: 4, fret: 7, color: "blue"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Dm7 10th
+		            notes: [
+		                {string: 1, fret: 10, color: "red"},
+		                {string: 2, fret: 10, color: "blue"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 10, color: "orange"},
+		                {string: 5, fret: 12, color: "blue"},
+		                {string: 6, fret: 10,  color: "red"}
+		            ]
+		        }
+		    ],
+
+		    // MAJOR 6TH CHORDS
+		    "C6": [
+		        { // C6 Open
+		            notes: [
+		                {string: 1, fret: 0, color: "yellow"},
+		                {string: 2, fret: 1, color: "red"},
+		                {string: 3, fret: 2, color: "silver"},
+		                {string: 4, fret: 2, color: "yellow"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // C6 3rd
+		            notes: [
+		                {string: 1, fret: 5, color: "silver"},
+		                {string: 2, fret: 5, color: "yellow"},
+		                {string: 3, fret: 5, color: "red"},
+		                {string: 4, fret: 5, color: "blue"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // C6 7th
+		            notes: [
+		                {string: 2, fret: 8, color: "blue"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 7, color: "silver"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G6": [
+		        { // G6 2nd
+		            notes: [
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 2, color: "silver"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // G6 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 5, color: "silver"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // G6 8th
+		            notes: [
+		                {string: 2, fret: 8, color: "red"},
+		                {string: 3, fret: 9, color: "silver"},
+		                {string: 4, fret: 9, color: "yellow"},
+		                {string: 5, fret: 10, color: "red"}
+		            ]
+		        },
+		        { // G6 10th  
+		            notes: [
+		                {string: 1, fret: 12, color: "silver"},
+		                {string: 2, fret: 12, color: "yellow"},
+		                {string: 3, fret: 12, color: "red"},
+		                {string: 4, fret: 12, color: "blue"},
+		                {string: 5, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D6": [
+		        { // D6 open
+		            notes: [
+		                {string: 1, fret: 2, color: "yellow"},
+		                {string: 2, fret: 3, color: "red"},
+		                {string: 3, fret: 4, color: "silver"},
+		                {string: 4, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // D6 5th
+		            notes: [
+		                {string: 1, fret: 7, color: "silver"},
+		                {string: 2, fret: 7, color: "yellow"},
+		                {string: 3, fret: 7, color: "red"},
+		                {string: 4, fret: 7, color: "blue"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // D6 9th
+		            notes: [
+		                {string: 2, fret: 10, color: "blue"},
+		                {string: 3, fret: 11, color: "yellow"},
+		                {string: 4, fret: 9, color: "silver"},
+		                {string: 6, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A6": [
+		        { // A6 open
+		            notes: [
+		                {string: 1, fret: 2, color: "silver"},
+		                {string: 2, fret: 2, color: "yellow"},
+		                {string: 3, fret: 2, color: "red"},
+		                {string: 4, fret: 2, color: "blue"},
+		                {string: 5, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // A6 5th pos 1
+		            notes: [
+		                {string: 2, fret: 5, color: "blue"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 4, color: "silver"},
+		                {string: 6, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // A6 5th pos 2
+		            notes: [
+		                {string: 1, fret: 5, color: "red"},
+		                {string: 2, fret: 7, color: "silver"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // A6 10th
+		            notes: [
+		                {string: 2, fret: 10, color: "red"},
+		                {string: 3, fret: 11, color: "silver"},
+		                {string: 4, fret: 11, color: "yellow"},
+		                {string: 5, fret: 12, color: "red"}
+		            ]
+		        }
+		    ],
+		    "E6": [
+		        { // E6 open 
+		            notes: [
+		                {string: 1, fret: 0, color: "red"},
+		                {string: 2, fret: 2, color: "silver"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 2, color: "red"},
+		                {string: 5, fret: 2, color: "blue"},
+		                {string: 6, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // E6 5th 
+		            notes: [
+		                {string: 2, fret: 5, color: "red"},
+		                {string: 3, fret: 6, color: "silver"},
+		                {string: 4, fret: 6, color: "yellow"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // E6 7th
+		            notes: [
+		                {string: 1, fret: 9, color: "silver"},
+		                {string: 2, fret: 9, color: "yellow"},
+		                {string: 3, fret: 9, color: "red"},
+		                {string: 4, fret: 9, color: "blue"},
+		                {string: 5, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "B6": [
+		        { // B6 open
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 0, color: "red"},
+		                {string: 3, fret: 1, color: "silver"},
+		                {string: 4, fret: 1, color: "yellow"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // B6 2nd
+		            notes: [
+		                {string: 1, fret: 4, color: "silver"},
+		                {string: 2, fret: 4, color: "yellow"},
+		                {string: 3, fret: 4, color: "red"},
+		                {string: 4, fret: 4, color: "blue"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // B6 6th
+		            notes: [
+		                {string: 2, fret: 7, color: "blue"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 6, color: "silver"},
+		                {string: 6, fret: 7, color: "red"}
+		            ]
+		        },
+		        { // B6 7th
+		            notes: [
+		                {string: 1, fret: 7, color: "red"},
+		                {string: 2, fret: 9, color: "silver"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F#6": [
+		        { // F#6 1st 
+		            notes: [
+		                {string: 2, fret: 2, color: "blue"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 1, color: "silver"},
+		                {string: 6, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // F#6 2nd
+		            notes: [
+		                {string: 1, fret: 2, color: "red"},
+		                {string: 2, fret: 4, color: "silver"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // F#6 7th
+		            notes: [
+		                {string: 2, fret: 7, color: "red"},
+		                {string: 3, fret: 8, color: "silver"},
+		                {string: 4, fret: 8, color: "yellow"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        },
+		        { // F#6 9th
+		            notes: [
+		                {string: 1, fret: 11, color: "silver"},
+		                {string: 2, fret: 11, color: "yellow"},
+		                {string: 3, fret: 11, color: "red"},
+		                {string: 4, fret: 11, color: "blue"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "C#6": [
+		        { // C#6 2nd 
+		            notes: [
+		                {string: 2, fret: 2, color: "red"},
+		                {string: 3, fret: 3, color: "silver"},
+		                {string: 4, fret: 3, color: "yellow"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#6 4th
+		            notes: [
+		                {string: 1, fret: 6, color: "silver"},
+		                {string: 2, fret: 6, color: "yellow"},
+		                {string: 3, fret: 6, color: "red"},
+		                {string: 4, fret: 6, color: "blue"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#6 8th 
+		            notes: [
+		                {string: 2, fret: 9, color: "blue"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 8, color: "silver"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G#6": [
+		        { // G#6 3rd
+		            notes: [
+		                {string: 2, fret: 4, color: "blue"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 3, color: "silver"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#6 4th 
+		            notes: [
+		                {string: 1, fret: 4, color: "red"},
+		                {string: 2, fret: 6, color: "silver"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // G#6 9th
+		            notes: [
+		                {string: 2, fret: 9, color: "red"},
+		                {string: 3, fret: 10, color: "silver"},
+		                {string: 4, fret: 10, color: "yellow"},
+		                {string: 5, fret: 11, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D#6": [
+		        { // D#6 2nd
+		            notes: [
+		                {string: 2, fret: 2, color: "red"},
+		                {string: 3, fret: 3, color: "silver"},
+		                {string: 4, fret: 3, color: "yellow"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // D#6 6th
+		            notes: [
+		                {string: 1, fret: 8, color: "silver"},
+		                {string: 2, fret: 8, color: "yellow"},
+		                {string: 3, fret: 8, color: "red"},
+		                {string: 4, fret: 8, color: "blue"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // D#6 10th
+		            notes: [
+		                {string: 2, fret: 11, color: "blue"},
+		                {string: 3, fret: 12, color: "yellow"},
+		                {string: 4, fret: 10, color: "silver"},
+		                {string: 6, fret: 11, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A#6": [
+		        { // A#6 1st
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 3, color: "silver"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 3, color: "blue"},
+		                {string: 5, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // A#6 6th
+		            notes: [
+		                {string: 2, fret: 6, color: "blue"},
+		                {string: 3, fret: 7, color: "yellow"},
+		                {string: 4, fret: 5, color: "silver"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // A#6 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "red"},
+		                {string: 2, fret: 10, color: "silver"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F6": [
+		        { // F6 1st 
+		            notes: [
+		                {string: 1, fret: 1, color: "red"},
+		                {string: 2, fret: 3, color: "silver"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // F6 6th
+		            notes: [
+		                {string: 2, fret: 6, color: "red"},
+		                {string: 3, fret: 7, color: "silver"},
+		                {string: 4, fret: 7, color: "yellow"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // F6 8th
+		            notes: [
+		                {string: 1, fret: 10, color: "silver"},
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 10, color: "red"},
+		                {string: 4, fret: 10, color: "blue"},
+		                {string: 5, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+
+		    // MINOR 6TH CHORDS
+		    "Am6": [
+		        { // Am6 Open
+		            notes: [
+		                {string: 1, fret: 2, color: "silver"},
+		                {string: 2, fret: 1, color: "yellow"},
+		                {string: 3, fret: 2, color: "red"},
+		                {string: 4, fret: 2, color: "blue"},
+		                {string: 5, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Am6 4th
+		            notes: [
+		                {string: 2, fret: 5, color: "blue"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 4, color: "silver"},
+		                {string: 6, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Am6 7th
+		            notes: [
+		                {string: 1, fret: 8, color: "yellow"},
+		                {string: 2, fret: 7, color: "silver"},
+		                {string: 3, fret: 9, color: "blue"},
+		                {string: 4, fret: 7, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Em6": [
+		        { // Em6 open
+		            notes: [
+		                {string: 1, fret: 0, color: "red"},
+		                {string: 2, fret: 2, color: "silver"},
+		                {string: 3, fret: 0, color: "yellow"},
+		                {string: 4, fret: 2, color: "red"},
+		                {string: 5, fret: 2, color: "blue"},
+		                {string: 6, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Em6 2nd
+		            notes: [
+		                {string: 1, fret: 3, color: "yellow"},
+		                {string: 2, fret: 2, color: "silver"},
+		                {string: 3, fret: 4, color: "blue"},
+		                {string: 4, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // Em6 11th
+		            notes: [
+		                {string: 2, fret: 12, color: "blue"},
+		                {string: 3, fret: 12, color: "yellow"},
+		                {string: 4, fret: 11, color: "silver"},
+		                {string: 6, fret: 12, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Bm6": [
+		        { // Bm6 open
+		            notes: [
+		                {string: 2, fret: 3, color: "yellow"},
+		                {string: 3, fret: 1, color: "silver"},
+		                {string: 4, fret: 0, color: "yellow"},
+		                {string: 5, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // Bm6 9th
+		            notes: [
+		                {string: 1, fret: 10, color: "yellow"},
+		                {string: 2, fret: 9, color: "silver"},
+		                {string: 3, fret: 11, color: "blue"},
+		                {string: 4, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "F#m6": [
+		        { // F#m6 1st
+		            notes: [
+		                {string: 2, fret: 2, color: "blue"},
+		                {string: 3, fret: 2, color: "yellow"},
+		                {string: 4, fret: 1, color: "silver"},
+		                {string: 6, fret: 2, color: "red"}
+		            ]
+		        },
+		        { // F#m6 4th
+		            notes: [
+		                {string: 1, fret: 5, color: "yellow"},
+		                {string: 2, fret: 4, color: "silver"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // F#m6 7th
+		            notes: [
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 8, color: "silver"},
+		                {string: 4, fret: 7, color: "yellow"},
+		                {string: 5, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "C#m6": [
+		        { // C#m6 2nd
+		            notes: [
+		                {string: 2, fret: 5, color: "yellow"},
+		                {string: 3, fret: 3, color: "silver"},
+		                {string: 4, fret: 2, color: "yellow"},
+		                {string: 5, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // C#m6 8th
+		            notes: [
+		                {string: 2, fret: 9, color: "blue"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 8, color: "silver"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        },
+		        { // C#m6 9th
+		            notes: [
+		                {string: 1, fret: 9, color: "red"},
+		                {string: 2, fret: 11, color: "silver"},
+		                {string: 3, fret: 9, color: "yellow"},
+		                {string: 4, fret: 11, color: "red"},
+		                {string: 5, fret: 11, color: "blue"},
+		                {string: 6, fret: 9, color: "red"}
+		            ]
+		        }
+		    ],
+		    "G#m6": [
+		        { // G#m6 3rd
+		            notes: [
+		                {string: 2, fret: 4, color: "blue"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 3, color: "silver"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#m6 4th
+		            notes: [
+		                {string: 1, fret: 4, color: "red"},
+		                {string: 2, fret: 6, color: "silver"},
+		                {string: 3, fret: 4, color: "yellow"},
+		                {string: 4, fret: 6, color: "red"},
+		                {string: 5, fret: 6, color: "blue"},
+		                {string: 6, fret: 4, color: "red"}
+		            ]
+		        },
+		        { // G#m6 6th
+		            notes: [
+		                {string: 1, fret: 7, color: "blue"},
+		                {string: 2, fret: 6, color: "silver"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 6, color: "red"}
+		            ]
+		        }
+		    ],
+		    "D#m6": [
+		        { // D#m6 1st
+		            notes: [
+		                {string: 1, fret: 2, color: "blue"},
+		                {string: 2, fret: 1, color: "silver"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // D#m6 4th
+		            notes: [
+		                {string: 2, fret: 7, color: "yellow"},
+		                {string: 3, fret: 5, color: "silver"},
+		                {string: 4, fret: 4, color: "yellow"},
+		                {string: 5, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // D#m6 10th
+		            notes: [
+		                {string: 2, fret: 11, color: "blue"},
+		                {string: 3, fret: 11, color: "yellow"},
+		                {string: 4, fret: 10, color: "silver"},
+		                {string: 6, fret: 11, color: "red"}
+		            ]
+		        }
+		    ],
+		    "A#m6": [
+		        { // A#m6 2nd
+		            notes: [
+		                {string: 2, fret: 6, color: "blue"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 5, color: "silver"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // A#m6 4th
+		            notes: [
+		                {string: 1, fret: 6, color: "red"},
+		                {string: 2, fret: 8, color: "silver"},
+		                {string: 3, fret: 6, color: "yellow"},
+		                {string: 4, fret: 8, color: "red"},
+		                {string: 5, fret: 8, color: "blue"},
+		                {string: 6, fret: 6, color: "red"}
+		            ]
+		        },
+		        { // A#m6 8th
+		            notes: [
+		                {string: 1, fret: 9, color: "blue"},
+		                {string: 2, fret: 8, color: "silver"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Fm6": [
+		        { // Fm6 open
+		            notes: [
+		                {string: 2, fret: 1, color: "blue"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 0, color: "silver"},
+		                {string: 6, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // Fm6 1st
+		            notes: [
+		                {string: 1, fret: 1, color: "red"},
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 1, color: "yellow"},
+		                {string: 4, fret: 3, color: "red"},
+		                {string: 5, fret: 3, color: "silver"},
+		                {string: 6, fret: 1, color: "red"}
+		            ]
+		        },
+		        { // Fm6 3rd
+		            notes: [
+		                {string: 1, fret: 4, color: "blue"},
+		                {string: 2, fret: 3, color: "silver"},
+		                {string: 3, fret: 5, color: "yellow"},
+		                {string: 4, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Fm6 6th
+		            notes: [
+		                {string: 1, fret: 9, color: "yellow"},
+		                {string: 2, fret: 7, color: "silver"},
+		                {string: 3, fret: 6, color: "blue"},
+		                {string: 4, fret: 8, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Cm6": [
+		        { // Cm6 1st
+		            notes: [
+		                {string: 2, fret: 4, color: "yellow"},
+		                {string: 3, fret: 2, color: "silver"},
+		                {string: 4, fret: 1, color: "yellow"},
+		                {string: 5, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Cm6 7th
+		            notes: [
+		                {string: 2, fret: 8, color: "blue"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 7, color: "silver"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // Cm6 8th
+		            notes: [
+		                {string: 1, fret: 8, color: "red"},
+		                {string: 2, fret: 10, color: "silver"},
+		                {string: 3, fret: 8, color: "yellow"},
+		                {string: 4, fret: 10, color: "red"},
+		                {string: 5, fret: 10, color: "blue"},
+		                {string: 6, fret: 8, color: "red"}
+		            ]
+		        },
+		        { // Cm6 10th
+		            notes: [
+		                {string: 1, fret: 11, color: "blue"},
+		                {string: 2, fret: 10, color: "silver"},
+		                {string: 3, fret: 12, color: "yellow"},
+		                {string: 4, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Gm6": [
+		        { // Gm6 2nd
+		            notes: [
+		                {string: 2, fret: 3, color: "blue"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 2, color: "silver"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Gm6 3rd
+		            notes: [
+		                {string: 1, fret: 3, color: "red"},
+		                {string: 2, fret: 5, color: "silver"},
+		                {string: 3, fret: 3, color: "yellow"},
+		                {string: 4, fret: 5, color: "red"},
+		                {string: 5, fret: 5, color: "blue"},
+		                {string: 6, fret: 3, color: "red"}
+		            ]
+		        },
+		        { // Gm6 5th
+		            notes: [
+		                {string: 1, fret: 6, color: "blue"},
+		                {string: 2, fret: 5, color: "silver"},
+		                {string: 3, fret: 7, color: "yellow"},
+		                {string: 4, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Gm6 10th
+		            notes: [
+		                {string: 2, fret: 11, color: "yellow"},
+		                {string: 3, fret: 9, color: "silver"},
+		                {string: 4, fret: 8, color: "yellow"},
+		                {string: 5, fret: 10, color: "red"}
+		            ]
+		        }
+		    ],
+		    "Dm6": [
+		        { // Dm6 open
+		            notes: [
+		                {string: 1, fret: 1, color: "yellow"},
+		                {string: 2, fret: 0, color: "silver"},
+		                {string: 3, fret: 3, color: "blue"},
+		                {string: 4, fret: 0, color: "red"}
+		            ]
+		        },
+		        { // Dm6 3rd
+		            notes: [
+		                {string: 2, fret: 6, color: "yellow"},
+		                {string: 3, fret: 4, color: "silver"},
+		                {string: 4, fret: 3, color: "yellow"},
+		                {string: 5, fret: 5, color: "red"}
+		            ]
+		        },
+		        { // Dm6 9th
+		            notes: [
+		                {string: 2, fret: 10, color: "yellow"},
+		                {string: 3, fret: 10, color: "blue"},
+		                {string: 4, fret: 9, color: "silver"},
+		                {string: 6, fret: 10, color: "red"}
+		            ]
+		        },
+		        { // Dm6 10th
+		            notes: [
+		                {string: 1, fret: 10, color: "red"},
+		                {string: 2, fret: 12, color: "silver"},
+		                {string: 3, fret: 10, color: "yellow"},
+		                {string: 4, fret: 12, color: "red"},
+		                {string: 5, fret: 12, color: "blue"},
+		                {string: 6, fret: 10, color: "red"}
+
+                    ]
+                }
+            ]
+        };
+        // ==================================================
+
+        // Extension mapping
+        const extension_map = {
+            "M": "M",
+            "m": "m", 
+            "7th": "7",
+            "m7th": "m7",
+            "6th": "6",
+            "m6th": "m6"
+        };
+
+        // Chord data
+        const major_chords = ["C", "G", "D", "A", "E", "B", "F#", "C#", "G#", "D#", "A#", "F"];
+        const minor_chords = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "A#m", "Fm", "Cm", "Gm", "Dm"];
+        const extensions = ["M", "m", "7th", "m7th", "6th", "m6th"];
+		// Fretboard dimensions
+		const fret_x = 50;
+		const fret_y = 130;  // Changed from 50 to 130
+		const fret_w = 600;
+		const fret_h = 100;
+		const num_frets = 12;
+		const num_strings = 6;
+		const fret_spacing = fret_w / num_frets;
+		const string_spacing = fret_h / (num_strings - 1);
+		const fret_dots = {3: true, 5: true, 7: true, 9: true, 12: true};
+		const string_labels = ["E", "A", "D", "G", "B", "E"];
+
+		// Circle dimensions
+		const center_x = 350;
+		const center_y = 360;  // Changed from 280 to 360
+		const major_radius = 200;
+		const minor_radius = 150;
+        // State
+        let selected_chord = "";
+        let selected_extension = "";
+        let selected_chord_index = 0;
+        let selected_extension_index = 0;
+        let chord_positions = {};
+
+        // Canvas setup
+        const canvas = document.getElementById('chordCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function getColorRGB(color_name) {
+            const colors = {
+                yellow: 'yellow',
+                red: 'red',
+                blue: '#80ccff',
+                silver: '#c0c0c0',
+                orange: 'orange'
+            };
+            return colors[color_name] || 'white';
+        }
+
+        function getChordKey() {
+            const mapped_extension = extension_map[selected_extension] || selected_extension;
+            return selected_chord + mapped_extension;
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#0000ff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawFretboard() {
+            // Fretboard background
+            ctx.fillStyle = '#2d1a0a';
+            ctx.fillRect(fret_x, fret_y, fret_w, fret_h);
+
+            // Frets (vertical lines)
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= num_frets; i++) {
+                const x = fret_x + i * fret_spacing;
+                ctx.beginPath();
+                ctx.moveTo(x, fret_y);
+                ctx.lineTo(x, fret_y + fret_h);
+                ctx.stroke();
+            }
+
+            // Strings (horizontal lines)
+            for (let i = 0; i < num_strings; i++) {
+                const y = fret_y + i * string_spacing;
+                ctx.beginPath();
+                ctx.moveTo(fret_x, y);
+                ctx.lineTo(fret_x + fret_w, y);
+                ctx.stroke();
+            }
+
+            // Fret dots
+            ctx.fillStyle = '#888';
+            for (let i = 1; i <= num_frets; i++) {
+                const x = fret_x + (i - 0.5) * fret_spacing;
+                if (i === 12) {
+                    const y1 = fret_y + 1.5 * string_spacing;
+                    const y2 = fret_y + 3.5 * string_spacing;
+                    ctx.beginPath();
+                    ctx.arc(x, y1, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(x, y2, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                } else if (fret_dots[i]) {
+                    const y = fret_y + fret_h / 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+
+            // Fret numbers
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            for (let i = 1; i <= num_frets; i++) {
+                const x = fret_x + (i - 0.5) * fret_spacing;
+                const y = fret_y + fret_h + 20;
+                ctx.fillText(i.toString(), x, y);
+            }
+
+            // String labels
+            ctx.textAlign = 'right';
+            for (let i = 0; i < num_strings; i++) {
+                const y = fret_y + i * string_spacing + 5;
+                ctx.fillText(string_labels[i], fret_x - 10, y);
+            }
+        }
+
+        function drawMajorChords() {
+            ctx.font = '24px Arial';
+            for (let i = 0; i < major_chords.length; i++) {
+                const isSelected = selected_chord_index === i + 1;
+                ctx.fillStyle = isSelected ? 'yellow' : 'black';
+                
+                const angle = i * (2 * Math.PI / major_chords.length) - Math.PI / 2;
+                const x = center_x + major_radius * Math.cos(angle);
+                const y = center_y + major_radius * Math.sin(angle) + 100;
+                
+                ctx.textAlign = 'center';
+                ctx.fillText(major_chords[i], x, y);
+            }
+        }
+
+        function drawMinorChords() {
+            ctx.font = '24px Arial';
+            for (let i = 0; i < minor_chords.length; i++) {
+                const isSelected = selected_chord_index === i + 13;
+                ctx.fillStyle = isSelected ? 'yellow' : 'black';
+                
+                const angle = i * (2 * Math.PI / minor_chords.length) - Math.PI / 2;
+                const x = center_x + minor_radius * Math.cos(angle);
+                const y = center_y + minor_radius * Math.sin(angle) + 100;
+                
+                ctx.textAlign = 'center';
+                ctx.fillText(minor_chords[i], x, y);
+            }
+        }
+
+        function drawChordPositions() {
+            if (selected_chord !== "" && selected_extension !== "") {
+                const chord_key = getChordKey();
+                const chord_data = all_chords[chord_key];
+                
+                if (chord_data) {
+                    const position = chord_positions[chord_key] || 1;
+                    const current_chord = chord_data[position - 1];
+                    
+                    if (current_chord) {
+                        for (const note of current_chord.notes) {
+                            ctx.fillStyle = getColorRGB(note.color);
+                            
+                            let dot_x, dot_y;
+                            
+                            if (note.fret === 0) {
+                                dot_x = fret_x - 15;
+                                dot_y = fret_y + (note.string - 1) * string_spacing;
+                            } else if (note.fret > 0 && note.fret <= num_frets) {
+                                dot_x = fret_x + (note.fret - 0.5) * fret_spacing;
+                                dot_y = fret_y + (note.string - 1) * string_spacing;
+                            } else {
+                                continue;
+                            }
+                            
+                            ctx.beginPath();
+                            ctx.arc(dot_x, dot_y, 8, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // White outline
+                            ctx.strokeStyle = 'white';
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+        }
+
+        function updateChordTitle() {
+            if (selected_chord !== "" && selected_extension !== "") {
+                let title = selected_chord;
+                if (selected_chord_index > 12) {
+                    title = title + "m";
+                    if (selected_extension === "m7th") {
+                        title = title + "7";
+                    } else if (selected_extension === "m6th") {
+                        title = title + "6";
+                    }
+                } else {
+                    if (selected_extension === "7th") {
+                        title = title + "7";
+                    } else if (selected_extension === "6th") {
+                        title = title + "6";
+                    } else {
+                        title = title + selected_extension;
+                    }
+                }
+                document.getElementById('chordTitle').textContent = title;
+            } else {
+                document.getElementById('chordTitle').textContent = "";
+            }
+        }
+
+		function checkChordClick(mouse_x, mouse_y) {
+		    // Check major chords
+		    for (let i = 0; i < major_chords.length; i++) {
+		        const angle = i * (2 * Math.PI / major_chords.length) - Math.PI / 2;
+		        const x = center_x + major_radius * Math.cos(angle);
+		        const y = center_y + major_radius * Math.sin(angle) + 100;
+		        const dist = Math.sqrt((mouse_x - x) ** 2 + (mouse_y - y) ** 2);
+
+		        if (dist < 35) {
+		            const chord_name = major_chords[i];
+		            const chord_index = i + 1;
+            
+		            console.log("Clicked chord:", chord_name, "Extension:", selected_extension);
+            
+		            // Check if this is the same chord being clicked again
+		            if (selected_chord === chord_name && selected_chord_index === chord_index && selected_extension !== "") {
+		                // Same chord clicked - cycle positions if extension is selected
+		                const chord_key = getChordKey();
+		                console.log("Cycling positions for:", chord_key);
+		                if (all_chords[chord_key]) {
+		                    const old_position = chord_positions[chord_key] || 1;
+		                    chord_positions[chord_key] = ((chord_positions[chord_key] || 1) % all_chords[chord_key].length) + 1;
+		                    console.log("Position changed from", old_position, "to", chord_positions[chord_key]);
+		                }
+		            } else {
+		                // New chord selected - reset extension and position
+		                selected_chord = chord_name;
+		                selected_chord_index = chord_index;
+		                selected_extension = "";
+		                selected_extension_index = 0;
+		                console.log("New chord selected, cleared extension");
+		            }
+		            return true;
+		        }
+		    }
+
+		    // Check minor chords
+		    for (let i = 0; i < minor_chords.length; i++) {
+		        const angle = i * (2 * Math.PI / minor_chords.length) - Math.PI / 2;
+		        const x = center_x + minor_radius * Math.cos(angle);
+		        const y = center_y + minor_radius * Math.sin(angle) + 100;
+		        const dist = Math.sqrt((mouse_x - x) ** 2 + (mouse_y - y) ** 2);
+
+		        if (dist < 35) {
+		            const chord_name = minor_chords[i].slice(0, -1);
+		            const chord_index = i + 13;
+            
+		            // Check if this is the same chord being clicked again
+		            if (selected_chord === chord_name && selected_chord_index === chord_index && selected_extension !== "") {
+		                // Same chord clicked - cycle positions if extension is selected
+		                const chord_key = getChordKey();
+		                if (all_chords[chord_key]) {
+		                    chord_positions[chord_key] = ((chord_positions[chord_key] || 1) % all_chords[chord_key].length) + 1;
+		                }
+		            } else {
+		                // New chord selected - reset extension and position
+		                selected_chord = chord_name;
+		                selected_chord_index = chord_index;
+		                selected_extension = "";
+		                selected_extension_index = 0;
+		            }
+		            return true;
+		        }
+		    }
+		    return false;
+		}
+        function handleExtensionClick(ext) {
+            selected_extension = ext;
+            selected_extension_index = extensions.indexOf(ext) + 1;
+            // Reset position when selecting new extension
+            const chord_key = getChordKey();
+            chord_positions[chord_key] = 1;
+        }
+
+        function updateExtensionButtons() {
+            const buttons = document.querySelectorAll('.extension-btn');
+            buttons.forEach(btn => {
+                const ext = btn.dataset.ext;
+                btn.classList.remove('selected');
+                
+                if (ext === selected_extension) {
+                    btn.classList.add('selected');
+                }
+                
+                btn.style.display = 'block';
+            });
+        }
+
+        function draw() {
+            drawBackground();
+            drawFretboard();
+            drawMajorChords();
+            drawMinorChords();
+            drawChordPositions();
+            updateChordTitle();
+            updateExtensionButtons();
+        }
+
+        // Event listeners
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouse_x = (e.clientX - rect.left) * scaleX;
+            const mouse_y = (e.clientY - rect.top) * scaleY;
+            
+            const clicked = checkChordClick(mouse_x, mouse_y);
+            if (clicked) {
+                showCurrentPosition();
+            }
+            draw();
+        });
+
+        document.querySelectorAll('.extension-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                handleExtensionClick(btn.dataset.ext);
+                showCurrentPosition();
+                draw();
+            });
+        });
+
+        // Show current position info
+        function showCurrentPosition() {
+            if (selected_chord !== "" && selected_extension !== "") {
+                const chord_key = getChordKey();
+                const chord_data = all_chords[chord_key];
+                if (chord_data) {
+                    const position = chord_positions[chord_key] || 1;
+                    console.log(`🎵 ${chord_key}: Position ${position} of ${chord_data.length}`);
+                }
+            }
+        }
+
+        // Initial draw
+        draw();
+        
+        console.log("🎸 Universal Chord System Framework Ready!");
+        console.log("Add your chord data to the all_chords object at the top of the script.");
+    </script>
+</body>
+</html>
